@@ -1,17 +1,20 @@
-from typing import List
-import websocket
 import json
+from typing import List
+
+import websocket
 from loguru import logger
 from websocket import create_connection
+
 from .trade import Trade
 
+
 class KrakenWebsocketAPI:
-    URL = "wss://ws.kraken.com/v2"
+    URL = 'wss://ws.kraken.com/v2'
 
     def __init__(self, pairs: List[str]):
         self.pairs = pairs
         websocket.enableTrace(True)
-        logger.info(f"Connecting to Kraken Websocket with pairs: {self.pairs}")
+        logger.info(f'Connecting to Kraken Websocket with pairs: {self.pairs}')
         self._ws_client = create_connection(url=self.URL)
         self._subscribe()
 
@@ -28,14 +31,14 @@ class KrakenWebsocketAPI:
                 'snapshot': False,
             },
         }
-        logger.info(f"Sending subscribe message: {subscribe_msg}")
+        logger.info(f'Sending subscribe message: {subscribe_msg}')
         self._ws_client.send(json.dumps(subscribe_msg))
 
         # skip subscription confirmation messages
         for _ in self.pairs:
             msg1 = self._ws_client.recv()
             msg2 = self._ws_client.recv()
-            logger.info(f"Subscription confirmation message: {msg1}, {msg2}")
+            logger.info(f'Subscription confirmation message: {msg1}, {msg2}')
 
     def get_trades(self) -> List[Trade]:
         """
@@ -45,25 +48,25 @@ class KrakenWebsocketAPI:
             List[Trade]: A list of Trade objects
         """
         data = self._ws_client.recv()
-        logger.info(f"Received message: {data}")
+        logger.info(f'Received message: {data}')
 
         if 'heartbeat' in data:
-            logger.info("Received heartbeat message")
+            logger.info('Received heartbeat message')
             return []
-        
+
         # transform raw string into a JSON object
-        try:    
+        try:
             data = json.loads(data)
         except json.JSONDecodeError as e:
-            logger.error(f"Error decoding JSON: {e}")
+            logger.error(f'Error decoding JSON: {e}')
             return []
-        
+
         try:
             trades_data = data['data']
         except KeyError as e:
-            logger.error(f"No data field in message: {e}")
+            logger.error(f'No data field in message: {e}')
             return []
-        
+
         trades = [
             Trade.from_kraken_api_response(
                 pair=trade['symbol'],
@@ -76,5 +79,3 @@ class KrakenWebsocketAPI:
 
         # breakpoint()
         return trades
-    
-    
