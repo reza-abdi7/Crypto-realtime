@@ -1,11 +1,14 @@
 from datetime import datetime
+from typing import Any, Dict
+
 from pydantic import BaseModel, field_serializer
-from typing import Dict, Any
+
 
 class Trade(BaseModel):
     """
     trade from kraken api
     """
+
     pair: str
     price: float
     volume: float
@@ -24,7 +27,7 @@ class Trade(BaseModel):
         price: float,
         volume: float,
         timestamp: str,
-    ) -> "Trade":
+    ) -> 'Trade':
         """Create a Trade instance from Kraken API response"""
         dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
         return cls(
@@ -32,9 +35,9 @@ class Trade(BaseModel):
             price=price,
             volume=volume,
             timestamp=dt,
-            timestamp_ms=int(dt.timestamp() * 1000)
+            timestamp_ms=int(dt.timestamp() * 1000),
         )
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert Trade to a dictionary with serializable values"""
         return self.model_dump()
