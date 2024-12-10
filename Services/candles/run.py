@@ -36,6 +36,8 @@ def init_candle(trade: dict) -> dict:
         'low': trade['price'],
         'close': trade['price'],
         'volume': trade['volume'],
+        'timestamp_ms': trade['timestamp_ms'],
+        'pair': trade['pair'],  # Add this to track the pair
     }
 
 
@@ -54,6 +56,8 @@ def update_candle(candle: dict, trade: dict) -> dict:
     candle['low'] = min(candle['low'], trade['price'])
     candle['close'] = trade['price']
     candle['volume'] += trade['volume']
+    candle['timestamp_ms'] = trade['timestamp_ms']
+    candle['pair'] = trade['pair']
     return candle
 
 
@@ -63,6 +67,7 @@ def main(
     kafka_output_topic: str,
     kafka_consumer_group: str,
     candle_seconds: int,
+    emit_incomplete_candles: bool,
 ):
     """
     1. ingests trades from the kafka topic
@@ -75,6 +80,7 @@ def main(
         kafka_output_topic (str): topic to push candles to
         kafka_consumer_group (str): kafka consumer group
         candles_seconds (int): size of the candles in seconds
+        emit_incomplete_candles (bool): Emit incomplete candles or just the final one
 
     Returns:
         None
@@ -96,10 +102,7 @@ def main(
     )
 
     # Define a topic where the candles will be pushed
-    output_topic = app.topic(
-        name=kafka_output_topic,
-        value_serializer='json',
-    )
+    output_topic = app.topic(name=kafka_output_topic, value_serializer='json')
 
     # create a streaming dataframe from the input topic
     sdf = app.dataframe(topic=input_topic)
@@ -107,25 +110,47 @@ def main(
     # start defining the transformation, for our candles service is stateful transformation using windowed aggregation
     # quixstreams documentation https://quix.io/docs/quix-streams/windowing.html#updating-window-definitions
 
-    # define tumbling window
-    sdf = sdf.tumbling_window(timedelta(seconds=candle_seconds))
+    # aggregate trades to candles
+    sdf = sdf.tumbling_window(timedelta(seconds=candle_seconds)).reduce(
+        reducer=update_candle, initializer=init_candle
+    )
 
-    # define aggregation
-    sdf = sdf.reduce(reducer=update_candle, initializer=init_candle)
+    if emit_incomplete_candles:
+        sdf = sdf.current()
+    else:
+        sdf = sdf.final()
 
-    # emit all intermediate candles to make the system more responsive
-    sdf = sdf.current()
+    # extract open, high, low, close, volume and timestamp_ms, pair from dataframe, because it is nested json and we want to flatten
+    sdf['open'] = sdf['value']['open']
+    sdf['high'] = sdf['value']['high']
+    sdf['low'] = sdf['value']['low']
+    sdf['close'] = sdf['value']['close']
+    sdf['volume'] = sdf['value']['volume']
+    sdf['timestamp_ms'] = sdf['value']['timestamp_ms']
+    sdf['pair'] = sdf['value']['pair']
 
-    # if you want to emit the final canndle only, use the followinhg
-    # sdf = app.final()
+    # extract window start and end timestamps
+    sdf['window_start_ms'] = sdf['start']
+    sdf['window_end_ms'] = sdf['end']
 
-    # Note, it can also be piped together like this in the examole in
-    # https://quix.io/docs/quix-streams/windowing.html#updating-window-definitions
+    # keep only the columns we need
+    sdf = sdf[
+        [
+            'pair',
+            'timestamp_ms',
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+            'window_start_ms',
+            'window_end_ms',
+        ]
+    ]
 
-    # push the candles to the output topic
+    sdf = sdf.update(lambda value: logger.info(f'Candle: {value}'))
     sdf = sdf.to_topic(topic=output_topic)
 
-    # start the application
     app.run()
 
 
@@ -138,4 +163,5 @@ if __name__ == '__main__':
         kafka_output_topic=config.kafka_output_topic,
         kafka_consumer_group=config.kafka_consumer_group,
         candle_seconds=config.candle_seconds,
+        emit_incomplete_candles=config.emit_incomplete_candles,
     )
