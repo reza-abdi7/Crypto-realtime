@@ -34,7 +34,10 @@ def main(kafka_broker_address: str, kafka_topic: str, kraken_api: KrakenWebsocke
 
             for trade in trades:
                 # serialize the trade to json
-                message = topic.serialize(key=trade.pair, value=trade.to_dict())
+                message = topic.serialize(
+                    key=trade.pair.replace('/', '-'),
+                    value=trade.to_dict(),
+                )
 
                 # push the serialized message to the topic
                 producer.produce(topic=topic.name, value=message.value, key=message.key)
