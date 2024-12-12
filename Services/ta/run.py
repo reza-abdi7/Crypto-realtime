@@ -10,6 +10,7 @@ def main(
     kafka_output_topic: str,
     kafka_consumer_group: str,
     max_candles_in_state: int,
+    candle_seconds: int,
 ):
     """
     1. ingests candles from the kafka topic
@@ -22,6 +23,7 @@ def main(
         kafka_output_topic (str): topic to push indicators to
         kafka_consumer_group (str): kafka consumer group
         max_candles_in_state (int): number of candles to keep in state
+        candle_seconds (int): size of the candles in seconds
 
     Returns:
         None
@@ -49,6 +51,9 @@ def main(
     # Create a streaming dataframe for transforming
     sdf = app.dataframe(topic=input_topic)
 
+    # we only keep the candles with the same windows size as the candle_seconds
+    sdf = sdf[sdf['candle_seconds'] == candle_seconds]
+
     # update the list of candles in the state
     sdf = sdf.apply(update_candle, stateful=True)
 
@@ -59,6 +64,9 @@ def main(
 
     # send the final message to the output topic
     sdf = sdf.to_topic(topic=output_topic)
+
+    # Clear the state before running due to potential offset issues
+    app.clear_state()
 
     app.run()
 
@@ -72,4 +80,5 @@ if __name__ == '__main__':
         kafka_output_topic=config.kafka_output_topic,
         kafka_consumer_group=config.kafka_consumer_group,
         max_candles_in_state=config.max_candles_in_state,
+        candle_seconds=config.candle_seconds,
     )
