@@ -148,6 +148,8 @@ def main(
         ]
     ]
 
+    sdf['candle_seconds'] = candle_seconds
+
     sdf = sdf.update(lambda value: logger.info(f'Candle: {value}'))
     sdf = sdf.to_topic(topic=output_topic)
 
