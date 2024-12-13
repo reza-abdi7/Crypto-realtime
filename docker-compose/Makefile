@@ -8,11 +8,21 @@ add-partition-trades:
 	docker compose -f redpanda.yaml exec redpanda rpk topic add-partitions trades --num 1
 
 # Technical Indicators Pipeline
-build-technical-indicators-pipeline:
-	docker-compose -f technical-indicators-pipeline.yaml build
+# for live data
+build-technical-indicators-live:
+	docker compose -f technical-indicators-live.yaml build
 
-start-technical-indicators-pipeline: build-technical-indicators-pipeline
-	docker-compose -f technical-indicators-pipeline.yaml up -d
+start-technical-indicators-live: build-technical-indicators-live
+	docker compose -f technical-indicators-live.yaml up -d
 
-stop-technical-indicators-pipeline:
-	docker-compose -f technical-indicators-pipeline.yaml down
+stop-technical-indicators-live:
+	docker compose -f technical-indicators-live.yaml down
+
+# for historical data
+build-technical-indicators-historical:
+	docker compose -f technical-indicators-historical.yaml build
+	
+backfill-technical-indicators: build-technical-indicators-historical
+	$(eval RUN_ID := $(shell uuidgen))
+	@echo "Starting backfill with RUN_ID: $(RUN_ID)"
+	RUN_ID=$(RUN_ID) docker compose -f technical-indicators-historical.yaml up -d

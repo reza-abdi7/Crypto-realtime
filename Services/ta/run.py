@@ -2,6 +2,7 @@ from candle import update_candle
 from loguru import logger
 from quixstreams import Application
 from technical_indicators import compute_indicators
+from typing_extensions import Literal
 
 
 def main(
@@ -11,6 +12,7 @@ def main(
     kafka_consumer_group: str,
     max_candles_in_state: int,
     candle_seconds: int,
+    data_source: Literal['live', 'historical'],
 ):
     """
     1. ingests candles from the kafka topic
@@ -24,6 +26,7 @@ def main(
         kafka_consumer_group (str): kafka consumer group
         max_candles_in_state (int): number of candles to keep in state
         candle_seconds (int): size of the candles in seconds
+        data_source (Literal['live', 'historical']): data source
 
     Returns:
         None
@@ -34,6 +37,7 @@ def main(
     app = Application(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
+        auto_offset_reset='latest' if data_source == 'live' else 'earliest',
     )
 
     # Define a topic where the candles will be read
@@ -66,7 +70,7 @@ def main(
     sdf = sdf.to_topic(topic=output_topic)
 
     # Clear the state before running due to potential offset issues
-    app.clear_state()
+    # app.clear_state()
 
     app.run()
 
@@ -81,4 +85,5 @@ if __name__ == '__main__':
         kafka_consumer_group=config.kafka_consumer_group,
         max_candles_in_state=config.max_candles_in_state,
         candle_seconds=config.candle_seconds,
+        data_source=config.data_source,
     )

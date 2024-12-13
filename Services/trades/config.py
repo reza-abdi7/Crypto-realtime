@@ -10,7 +10,7 @@ class Config(BaseSettings):
     kafka_broker_address: str
     kafka_topic: str
     pairs: List[str]
-    data_source: Literal['live', 'historical', 'test']
+    data_source: Literal['live', 'historical']
     last_n_days: Optional[int]
 
 

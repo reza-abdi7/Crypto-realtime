@@ -30,7 +30,7 @@ class KrakenRestAPI(TradesAPI):
         # sort trades by timestamp
         trades.sort(key=lambda x: x.timestamp_ms)
 
-        breakpoint()
+        # breakpoint()
 
         return trades
 
