@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from pydantic import BaseModel, field_serializer
@@ -21,7 +21,36 @@ class Trade(BaseModel):
         return dt.isoformat()
 
     @classmethod
-    def from_kraken_api_response(
+    def from_kraken_rest_api_response(
+        cls,
+        pair: str,
+        price: float,
+        volume: float,
+        timestamp_sec: float,
+    ) -> 'Trade':
+        """
+        Returns a Trade object from the Kraken REST API response.
+
+        E.g response:
+            ['76395.00000', '0.01305597', 1731155565.4159515, 's', 'm', '', 75468573]
+
+            price: float
+            volume: float
+            timestamp_sec: float
+        """
+        timestamp_ms = int(float(timestamp_sec) * 1000)
+        dt = datetime.fromtimestamp(timestamp_ms / 1000.0, tz=timezone.utc)
+
+        return cls(
+            pair=pair,
+            price=price,
+            volume=volume,
+            timestamp=dt,
+            timestamp_ms=timestamp_ms,
+        )
+
+    @classmethod
+    def from_kraken_websocket_api_response(
         cls,
         pair: str,
         price: float,

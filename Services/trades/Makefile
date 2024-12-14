@@ -1,8 +1,13 @@
-run-dev:
+run-dev-live:
+	cp live.settings.env settings.env
+	uv run python run.py
+
+run-dev-historical:
+	cp historical.settings.env settings.env
 	uv run python run.py
 
 build:
-	docker build -f multistage.Dockerfile -t trades .
+	docker build -f Dockerfile -t trades .
 
 run: build
 	docker run -it \
