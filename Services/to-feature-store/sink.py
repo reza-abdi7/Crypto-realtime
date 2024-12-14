@@ -1,7 +1,9 @@
-from typing import List
+from datetime import datetime, timezone
+from typing import List, Optional
 
 import hopsworks
 import pandas as pd
+from loguru import logger
 from quixstreams.sinks.base import BatchingSink, SinkBackpressureError, SinkBatch
 
 
@@ -18,6 +20,7 @@ class HopsworksFeatureStoreSink(BatchingSink):
         feature_group_version: int,
         feature_group_primary_key: List[str],
         feature_group_event_time: str,
+        feature_group_materialization_interval_minutes: Optional[int] = 15,
     ):
         """
         initialze the connection to the hopsworks feature store
@@ -25,7 +28,9 @@ class HopsworksFeatureStoreSink(BatchingSink):
         super().__init__()
         self.feature_group_name = feature_group_name
         self.feature_group_version = feature_group_version
-
+        self.materialization_interval_minutes = (
+            feature_group_materialization_interval_minutes
+        )
         project = hopsworks.login(
             api_key_value=api_key,
             project=project_name,
@@ -39,6 +44,16 @@ class HopsworksFeatureStoreSink(BatchingSink):
             event_time=feature_group_event_time,
             online_enabled=True,
         )
+
+        # set the materialization interval
+        try:
+            self._feature_group.materialization_job.schedule(
+                cron_expression=f'0 0/{self.materialization_interval_minutes} * ? * * *',
+                start_time=datetime.now(tz=timezone.utc),
+            )
+        # TODO: handle the FeatureStoreException
+        except Exception as e:
+            logger.error(f'Failed to schedule materialization job: {e}')
 
     def write(self, batch: SinkBatch):
         data = [item.value for item in batch]
