@@ -8,5 +8,5 @@ run: build
 	docker run -it \
 		--network redpanda_network \
 		-e KAFKA_BROKER_ADDRESS=redpanda:9092 \
-		--env-file cryptopanic_credentials.env \
+		--env-file credentials.env \
 		news
