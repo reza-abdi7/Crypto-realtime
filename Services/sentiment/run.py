@@ -27,7 +27,9 @@ def main(
     sdf = sdf.apply(
         lambda value: {
             "sentiment": value["title"],
-            **llm.get_sentiment(value["title"]).to_dict(),
+            **llm.get_sentiment(value["title"]).model_dump(),
+            "model_name": llm.model_name,
+            "timestamp_ms": value["timestamp_ms"],
         }
     )
 
@@ -44,7 +46,7 @@ if __name__ == "__main__":
 
     logger.info(f"using model provider: {config.model_provider}")
     llm = get_llm(config.model_provider)
-
+    # breakpoint()
     main(
         kafka_broker_address=config.kafka_broker_address,
         kafka_input_topic=config.kafka_input_topic,
