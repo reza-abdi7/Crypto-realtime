@@ -9,7 +9,7 @@ class Config(BaseSettings):
     kafka_output_topic: str
     kafka_consumer_group: str
 
-    model_provider: Literal["openai", "llamacpp"]
+    model_provider: Literal["openai", "ollama", "llamacpp"]
 
 
 config = Config()

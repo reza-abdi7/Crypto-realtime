@@ -1,5 +1,5 @@
 version: "3.9"
-name: technical-indicators-pipeline
+name: news-sentiment-pipeline
 networks:
   redpanda_network:
     external: true
@@ -7,41 +7,31 @@ networks:
 
 services:
 
-  trades:
+  news:
     build:
-      context: ../services/trades
+      context: ../services/news
       dockerfile: Dockerfile
     networks:
       - redpanda_network
     env_file:
-      - ../services/trades/settings.env
+      - ../services/news/settings.env
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
-    restart: always
+    # restart: always
 
-  candles:
+  sentiment:
     build:
-      context: ../services/candles
+      context: ../services/sentiment
       dockerfile: Dockerfile
     networks:
       - redpanda_network
     env_file:
-      - ../services/candles/live.settings.env
+      - ../services/sentiment/settings.env
+      - ../services/sentiment/credentials.env
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
-    restart: always
-
-  ta:
-    build:
-      context: ../services/ta
-      dockerfile: Dockerfile
-    networks:
-      - redpanda_network
-    env_file:
-      - ../services/ta/live.settings.env
-    environment:
-      - KAFKA_BROKER_ADDRESS=redpanda:9092
-    restart: always
+      - MODEL_PROVIDER=openai
+    # restart: always
 
   to-feature-store:
     build:
@@ -50,8 +40,8 @@ services:
     networks:
       - redpanda_network
     env_file:
-      - ../services/to-feature-store/live.settings.env
+      - ../services/to-feature-store/live.settings.sentiment.env
       - ../services/to-feature-store/credentials.env
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
-    restart: always
+    # restart: always

@@ -28,6 +28,19 @@ backfill-technical-indicators: build-technical-indicators-historical
 	RUN_ID=$(RUN_ID) docker compose -f technical-indicators-historical.yaml up -d
 
 
+# News Sentiment Pipeline
+# for live data
+build-news-sentiment-live:
+	docker compose -f news-sentiment-live.yaml build
+
+start-news-sentiment-live: build-news-sentiment-live
+	docker compose -f news-sentiment-live.yaml up -d
+
+stop-news-sentiment-live:
+	docker compose -f news-sentiment-live.yaml down
+
+
+
 clean-backfill-kakfa-topics:
 	@echo "Removing all Kafka topics that contain the word historical"
 	docker compose -f redpanda.yml exec redpanda rpk topic delete -r ".*historical.*"
