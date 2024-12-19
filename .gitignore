@@ -211,3 +211,7 @@ certificates/
 target/
 anthropic.env
 **/hopsworks_credentials.env
+
+# LLM Models
+models/
+*.gguf
