@@ -1,5 +1,5 @@
 from typing import Optional, Literal
-from .base import BaseSentimentExtractor, NewsSentiment
+from base import BaseSentimentExtractor, NewsSentiment
 from llama_index.core.prompts import PromptTemplate
 from llama_index.llms.ollama import Ollama
 
@@ -22,29 +22,26 @@ class OllamaSentimentExtractor(BaseSentimentExtractor):
             Focus ONLY on coins that are directly mentioned or significantly impacted by the news.
             DO NOT include coins that are not relevant to the news content.
 
+            Do not output data for a given coin if the news is not relevant to it.
+
             ## Example input
             "Goldman Sachs wants to invest in Bitcoin and Ethereum, but not in XRP"
 
             ## Example output
-            {
-                "new_sentiment": [
-                    {"coin": "BTC", "sentiment": 1},
-                    {"coin": "ETH", "sentiment": 1},
-                    {"coin": "XRP", "sentiment": -1}
-                ],
-                "reasoning": "Goldman Sachs' interest in Bitcoin and Ethereum indicates strong institutional adoption potential for these assets, suggesting positive price impact. Their explicit disinterest in XRP could negatively impact its market sentiment."
-            }
+            [
+                {"coin": "BTC", "signal": 1},
+                {"coin": "ETH", "signal": 1},
+                {"coin": "XRP", "signal": -1},
+            ]
 
             ## Example input
             "Bitcoin ETF ads spotted on China's Alipay payment app"
 
             ## Example output
-            {
-                "new_sentiment": [
+            [
                     {"coin": "BTC", "sentiment": 1}
-                ],
-                "reasoning": "The presence of Bitcoin ETF ads on Alipay indicates growing institutional interest in Bitcoin specifically. This news only affects Bitcoin and has no direct impact on other cryptocurrencies."
-            }
+            ]
+           
 
             News story to analyze:
             {news_story}
@@ -83,7 +80,7 @@ class OllamaSentimentExtractor(BaseSentimentExtractor):
 
 
 if __name__ == "__main__":
-    from .config import OllamaConfig
+    from config import OllamaConfig
 
     config = OllamaConfig()
     llm = OllamaSentimentExtractor(

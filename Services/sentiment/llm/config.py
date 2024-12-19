@@ -12,6 +12,14 @@ class OllamaConfig(BaseSettings):
     model_name: str
 
 
-class LlamacppConfig(BaseSettings):
+class LlamaCppConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file="llamacpp.env")
-    model_name: str
+    model_path: str
+    n_ctx: int
+    n_threads: int
+    temperature: float
+    max_tokens: int
+    repeat_penalty: float
+    verbose: bool
+    penalize_nl: bool
+    escape_newlines: bool
